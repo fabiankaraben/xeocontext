@@ -11,7 +11,8 @@ export async function fetchConfig(): Promise<XeoConfig> {
 }
 
 export async function fetchContent(filename: string): Promise<string> {
-    const res = await fetch(`${CONTENT_BASE}/${filename}`);
+    const cleanFilename = filename.startsWith('/') ? filename.slice(1) : filename;
+    const res = await fetch(`${CONTENT_BASE}/${cleanFilename}`);
     if (!res.ok) {
         throw new Error(`Failed to load content: ${filename}`);
     }

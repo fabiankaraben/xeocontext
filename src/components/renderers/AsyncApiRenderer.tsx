@@ -7,12 +7,13 @@ import "./asyncapi.css";
 
 interface AsyncApiRendererProps {
     schema: string;
+    config?: any;
 }
 
-export function AsyncApiRenderer({ schema }: AsyncApiRendererProps) {
+export function AsyncApiRenderer({ schema, config }: AsyncApiRendererProps) {
     return (
         <div className="asyncapi-container bg-white dark:bg-neutral-950 dark:text-neutral-100 rounded-lg p-4 overflow-x-auto">
-            <AsyncApiComponent schema={schema} />
+            <AsyncApiComponent schema={schema} config={config} />
         </div>
     );
 }

@@ -11,23 +11,34 @@ When running in Docker, this file must be mounted to:
 
 ```json
 {
-  "title": "My System Docs",
-  "files": {
-    "systemDesign": [
-      {
-        "title": "Architecture Overview",
-        "path": "system-design/architecture.md",
-        "slug": "overview"
-      },
-      {
-        "title": "Database Schema",
-        "path": "system-design/database.md",
-        "slug": "database"
-      }
-    ],
-    "openapi": "openapi/my-api-v1.yaml",
-    "asyncapi": "asyncapi/events-v1.yaml"
-  }
+  "projectName": "System Name",
+  "projectDomain": "system.example.com",
+  "navigation": [
+    {
+      "title": "Global Architecture",
+      "items": [
+        {
+          "title": "Overview",
+          "href": "/"
+        },
+        {
+          "title": "Infrastructure",
+          "href": "/global/infrastructure"
+        }
+      ]
+    },
+    {
+      "title": "Domains",
+      "items": [
+        {
+          "title": "Identity",
+          "href": "/domains/identity"
+        }
+      ]
+    }
+  ],
+  "openapi": "/global/gateway/openapi.yaml",
+  "asyncapi": "/global/gateway/asyncapi.yaml"
 }
 ```
 
@@ -35,21 +46,25 @@ When running in Docker, this file must be mounted to:
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `title` | `string` | The name of your application/project. Displayed in the header. |
-| `files` | `object` | Contains the path definitions for your documentation. |
-| `files.systemDesign` | `array` | List of Markdown files to render in the System Design tab. |
-| `files.openapi` | `string` | **Relative path** to your OpenAPI/Swagger specification file (YAML or JSON). |
-| `files.asyncapi` | `string` | **Relative path** to your AsyncAPI specification file (YAML or JSON). |
+| `projectName` | `string` | The name of your application/project. |
+| `projectDomain` | `string` | The domain of your project, used for identity. |
+| `navigation` | `array` | List of navigation groups to organize the sidebar. |
+| `openapi` | `string` | **Path** to the Master OpenAPI file (usually `/global/gateway/openapi.yaml`). |
+| `asyncapi` | `string` | **Path** to the Master AsyncAPI file (usually `/global/gateway/asyncapi.yaml`). |
 
-### System Design Entry
-
-Each item in the `systemDesign` array requires:
+### Navigation Group
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `title` | `string` | The display name in the sidebar navigation. |
-| `slug` | `string` | The URL identifier. Example: `overview` becomes `/system/overview`. |
-| `path` | `string` | **Relative path** to the Markdown file within the mounted content volume. |
+| `title` | `string` | The heading for this group of links in the sidebar. |
+| `items` | `array` | List of navigation items. |
+
+### Navigation Item
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `title` | `string` | The display name of the link. |
+| `href` | `string` | The content path. URLs starting with `/` map to the content directory. <br> - `/` -> `/README.md` <br> - `/path/to/doc` -> `/path/to/doc.md` or `/path/to/doc/readme.md` |
 
 ## Path Resolution
 

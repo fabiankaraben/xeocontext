@@ -2,21 +2,26 @@
 
 This guide explains how to organize your files and write content that leverages XeoContext's rendering features.
 
-## Recommended Directory Structure
+## Repository Structure
+> **Note:** This structure follows Domain-Driven Design (DDD) principles.
 
-We recommend keeping your documentation in a dedicated repository or a `docs/` folder in your repo.
+The content is located at the **repository root**. It follows a strict separation between **Global Architecture** and **Bounded Contexts (Domains)**.
 
-```
-my-docs/
-├── xeocontext.config.json    # Main Config
-├── system-design/            # Markdown Files
-│   ├── 01-overview.md
-│   ├── 02-database.md
-│   └── images/               # Static images for markdown
-├── openapi/                  # REST API Specs
-│   └── api-spec.yaml
-└── asyncapi/                 # Event Specs
-    └── event-spec.yaml
+```text
+.
+├── docker-compose.yml            # Orchestration to run the viewer locally.
+├── xeocontext.config.json        # [MANDATORY] The central navigation and metadata map.
+├── global/                       # [MANDATORY] Cross-cutting architectural decisions & Master Roots.
+│   ├── gateway/                  # Unified System API (Master Roots).
+│   │   ├── openapi.yaml          # Master REST API definition.
+│   │   └── asyncapi.yaml         # Master Event definition.
+│   ├── adrs/                     # Architecture Decision Records.
+│   └── standards/                # Coding conventions, API guidelines, etc.
+└── domains/                      # [MANDATORY] Business Logic Modules.
+    ├── {domain-name}/            # (e.g., identity, payments)
+    │   ├── readme.md             # Domain overview.
+    │   ├── openapi.yaml          # Domain-specific REST API.
+    │   └── asyncapi.yaml         # Domain-specific Event API.
 ```
 
 ## System Design (Markdown)

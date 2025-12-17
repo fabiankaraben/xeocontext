@@ -8,6 +8,7 @@ import clsx from "clsx";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, List, FileText, ArrowLeft, ArrowRight } from "lucide-react";
+import { NavItem, NavGroup } from "@/lib/types";
 
 const MarkdownRenderer = dynamic(
     () => import("@/components/renderers/MarkdownRenderer").then((mod) => mod.MarkdownRenderer),
@@ -23,54 +24,91 @@ export function SystemPageClient() {
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
     const [mobileTab, setMobileTab] = useState<"menu" | "toc">("menu");
 
-    // Determine current slug from URL or default to first item
-    const slug = params?.slug?.[0];
+    // Determine current slug path
+    // If slug is empty (root), it is [], which join gives "" -> "/"
+    const slugPath = params?.slug && Array.isArray(params.slug)
+        ? "/" + params.slug.join("/")
+        : "/";
+
+    // Flatten navigation for easy next/prev and searching
+    const allItems: NavItem[] = [];
+    if (config?.navigation) {
+        config.navigation.forEach((group: NavGroup) => {
+            if (group.items) {
+                allItems.push(...group.items);
+            }
+        });
+    }
+
+    // Find active item
+    const activeItem = allItems.find(item => item.href === slugPath) || allItems[0];
+
+    // Redirect if needed (e.g. if we are at /system but root item is something else, or invalid slug)
+    // Actually, if activeItem is found, use it. If not, default to first item but update URL?
+    // If slugPath is provided but not found, maybe 404 or redirect to first.
+    // For now, if no match found, show first item content but keep URL - or redirect?
+    // Let's stick to showing activeItem found or first one.
 
     useEffect(() => {
-        const files = config?.files.systemDesign;
-        if (Array.isArray(files) && files.length > 0) {
+        if (!activeItem) return;
 
-            // Redirect to first file if no slug provided
-            if (!slug) {
-                const firstSlug = files[0].slug;
-                if (firstSlug) {
-                    router.replace(`/system/${firstSlug}`);
-                    return;
+        async function load() {
+            setLoading(true);
+            try {
+                // Heuristic to find the file
+                // 1. Try href + ".md" (unless href is /, then README.md)
+                // 2. Try href + "/readme.md"
+                // 3. Try href + "/index.md" 
+
+                let possiblePaths = [];
+                if (activeItem.href === "/") {
+                    possiblePaths.push("README.md");
+                    possiblePaths.push("index.md");
+                } else {
+                    possiblePaths.push(`${activeItem.href}.md`);
+                    possiblePaths.push(`${activeItem.href}/readme.md`);
+                    possiblePaths.push(`${activeItem.href}/index.md`);
                 }
-            }
 
-            // Find active file by slug, or default to first file
-            const activeFile = slug
-                ? files.find((f: any) => f.slug === slug)
-                : files[0];
+                // Try sequentially
+                let loadedContent = null;
+                for (const p of possiblePaths) {
+                    try {
+                        loadedContent = await fetchContent(p);
+                        if (loadedContent) break;
+                    } catch (e) {
+                        // ignore
+                    }
+                }
 
-            if (activeFile) {
-                setLoading(true);
-                fetchContent(activeFile.path)
-                    .then(setContent)
-                    .catch((err) => console.error("Failed system design content", err))
-                    .finally(() => setLoading(false));
+                if (loadedContent) {
+                    setContent(loadedContent);
+                } else {
+                    setContent("# Content not found\nCould not load content for this path.");
+                }
+            } catch (err) {
+                console.error("Failed system design content", err);
+                setContent("# Error\nFailed to load content.");
+            } finally {
+                setLoading(false);
             }
         }
-    }, [config, slug, router]);
+
+        load();
+    }, [activeItem, config]);
 
     // Close mobile menu on slug change
     useEffect(() => {
         setIsMobileNavOpen(false);
-    }, [slug]);
+    }, [slugPath]);
 
-    if (!config?.files.systemDesign) return null;
+    if (!config?.navigation) return null;
 
-    const files = config.files.systemDesign;
-    const activeFile = slug ? files.find((f: any) => f.slug === slug) : files[0];
-    const activeSlug = activeFile?.slug || files[0].slug;
+    const activeIndex = allItems.findIndex(item => item === activeItem);
+    const prevItem = activeIndex > 0 ? allItems[activeIndex - 1] : null;
+    const nextItem = activeIndex < allItems.length - 1 ? allItems[activeIndex + 1] : null;
 
-    const activeIndex = files.findIndex((f: any) => f.slug === activeSlug);
-    const prevFile = activeIndex > 0 ? files[activeIndex - 1] : null;
-    const nextFile = activeIndex < files.length - 1 ? files[activeIndex + 1] : null;
-
-    if (!Array.isArray(files)) return <div className="p-8 text-destructive">Configuration error: systemDesign should be a list of files.</div>;
-
+    // TOC Logic
     const [toc, setToc] = useState<{ id: string; text: string; level: number }[]>([]);
     const [activeId, setActiveId] = useState<string>("");
 
@@ -82,17 +120,7 @@ export function SystemPageClient() {
 
         const lines = content.split("\n");
         const headings: { id: string; text: string; level: number }[] = [];
-
-        // Simple slugify function
-        const slugify = (text: string) => {
-            return text
-                .toString()
-                .toLowerCase()
-                .trim()
-                .replace(/\s+/g, '-')     // Replace spaces with -
-                .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-                .replace(/\-\-+/g, '-');  // Replace multiple - with single -
-        };
+        const slugify = (text: string) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
 
         lines.forEach((line) => {
             const match = line.match(/^(#{1,3})\s+(.*)$/);
@@ -106,28 +134,39 @@ export function SystemPageClient() {
         setToc(headings);
     }, [content]);
 
-    // Scroll Spy for Table of Contents
     useEffect(() => {
         if (!toc.length) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        setActiveId(entry.target.id);
-                    }
-                });
-            },
-            { rootMargin: "0px 0px -80% 0px" }
-        );
-
-        toc.forEach((item) => {
-            const element = document.getElementById(item.id);
-            if (element) observer.observe(element);
-        });
-
+        const observer = new IntersectionObserver((entries) => { entries.forEach((entry) => { if (entry.isIntersecting) { setActiveId(entry.target.id); } }); }, { rootMargin: "0px 0px -80% 0px" });
+        toc.forEach((item) => { const element = document.getElementById(item.id); if (element) observer.observe(element); });
         return () => observer.disconnect();
     }, [toc]);
+
+    // Render helper for sidebar links
+    const renderSidebarLink = (item: NavItem) => {
+        // Construct the link href. 
+        // If item.href is "/", link to "/system"
+        // Else link to "/system" + item.href (removing leading slash if needed to look clean, or just append)
+        // Actually, our route is /system/[[...slug]].
+        // If href is /global/infrastructure, we want /system/global/infrastructure.
+
+        const linkHref = item.href === "/" ? "/system" : `/system${item.href}`;
+        const isActive = item.href === slugPath; // exact match
+
+        return (
+            <Link
+                key={item.href}
+                href={linkHref}
+                className={clsx(
+                    "block w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-300 border",
+                    isActive
+                        ? "bg-linear-to-r from-violet-500/10 to-blue-500/10 text-violet-600 dark:text-violet-400 font-medium border-violet-200/50 dark:border-violet-800/50 shadow-sm"
+                        : "border-transparent text-muted-foreground hover:bg-violet-500/5 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300"
+                )}
+            >
+                {item.title}
+            </Link>
+        );
+    };
 
     return (
         <div className="flex flex-col xl:flex-row h-full bg-background">
@@ -139,7 +178,7 @@ export function SystemPageClient() {
                 >
                     <span className="flex items-center text-foreground">
                         <FileText className="w-4 h-4 mr-2 opacity-70" />
-                        {activeFile?.title || "System Design"}
+                        {activeItem?.title || "System Design"}
                     </span>
                     <ChevronDown className={clsx("w-4 h-4 text-muted-foreground transition-transform", isMobileNavOpen ? "rotate-180" : "")} />
                 </button>
@@ -147,68 +186,28 @@ export function SystemPageClient() {
                 {isMobileNavOpen && (
                     <div className="border-t border-border bg-background/95 backdrop-blur-sm animate-in slide-in-from-top-2 shadow-lg">
                         <div className="flex border-b border-border">
-                            <button
-                                onClick={() => setMobileTab("menu")}
-                                className={clsx(
-                                    "flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors border-b-2",
-                                    mobileTab === "menu" ? "text-primary border-primary bg-primary/5" : "text-muted-foreground border-transparent hover:bg-muted/50"
-                                )}
-                            >
-                                <FileText className="w-4 h-4 mr-2" />
-                                Documents
+                            <button onClick={() => setMobileTab("menu")} className={clsx("flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors border-b-2", mobileTab === "menu" ? "text-primary border-primary bg-primary/5" : "text-muted-foreground border-transparent hover:bg-muted/50")}>
+                                <FileText className="w-4 h-4 mr-2" /> Documents
                             </button>
-                            <button
-                                onClick={() => setMobileTab("toc")}
-                                className={clsx(
-                                    "flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors border-b-2",
-                                    mobileTab === "toc" ? "text-primary border-primary bg-primary/5 show" : "text-muted-foreground border-transparent hover:bg-muted/50"
-                                )}
-                            >
-                                <List className="w-4 h-4 mr-2" />
-                                On this page
+                            <button onClick={() => setMobileTab("toc")} className={clsx("flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors border-b-2", mobileTab === "toc" ? "text-primary border-primary bg-primary/5" : "text-muted-foreground border-transparent hover:bg-muted/50")}>
+                                <List className="w-4 h-4 mr-2" /> On this page
                             </button>
                         </div>
 
                         <div className="max-h-[60vh] overflow-y-auto p-2">
                             {mobileTab === "menu" ? (
-                                <nav className="space-y-1">
-                                    {files.map((file: any) => (
-                                        <Link
-                                            key={file.slug}
-                                            href={`/system/${file.slug}`}
-                                            className={clsx(
-                                                "block w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-300 border",
-                                                activeSlug === file.slug
-                                                    ? "bg-linear-to-r from-violet-500/10 to-blue-500/10 text-violet-600 dark:text-violet-400 font-medium border-violet-200/50 dark:border-violet-800/50 shadow-sm"
-                                                    : "border-transparent text-muted-foreground hover:bg-violet-500/5 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300"
-                                            )}
-                                        >
-                                            {file.title}
-                                        </Link>
+                                <nav className="space-y-4 p-2">
+                                    {config.navigation.map((group, idx) => (
+                                        <div key={idx} className="space-y-1">
+                                            <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.title}</h3>
+                                            {group.items.map(renderSidebarLink)}
+                                        </div>
                                     ))}
                                 </nav>
                             ) : (
                                 <nav className="space-y-1 pl-1">
-                                    {toc.length === 0 ? (
-                                        <p className="p-4 text-sm text-muted-foreground text-center">No table of contents available.</p>
-                                    ) : toc.map((item) => (
-                                        <a
-                                            key={item.id}
-                                            href={`#${item.id}`}
-                                            className={clsx(
-                                                "block text-sm py-2 px-3 rounded-md transition-colors",
-                                                activeId === item.id
-                                                    ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 font-medium"
-                                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                            )}
-                                            style={{ paddingLeft: `${(item.level - 1) * 1 + 0.75}rem` }}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
-                                                setActiveId(item.id);
-                                                setIsMobileNavOpen(false);
-                                            }}
-                                        >
+                                    {toc.length === 0 ? <p className="p-4 text-sm text-muted-foreground text-center">No table of contents available.</p> : toc.map((item) => (
+                                        <a key={item.id} href={`#${item.id}`} className={clsx("block text-sm py-2 px-3 rounded-md transition-colors", activeId === item.id ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/50")} style={{ paddingLeft: `${(item.level - 1) * 1 + 0.75}rem` }} onClick={(e) => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); setActiveId(item.id); setIsMobileNavOpen(false); }}>
                                             {item.text}
                                         </a>
                                     ))}
@@ -220,32 +219,22 @@ export function SystemPageClient() {
             </div>
 
             {/* Left Sidebar (Desktop) */}
-            <aside className="hidden xl:block w-72 border-r border-border bg-muted/20 overflow-y-auto flex-shrink-0 backdrop-blur-sm p-4">
-                <nav className="pt-3 space-y-1">
-                    <h2 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                        Documents
-                    </h2>
-                    {files.map((file: any) => (
-                        <Link
-                            key={file.slug}
-                            href={`/system/${file.slug}`}
-                            className={clsx(
-                                "block w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-300 border",
-                                activeSlug === file.slug
-                                    ? "bg-linear-to-r from-violet-500/10 to-blue-500/10 text-violet-600 dark:text-violet-400 font-medium border-violet-200/50 dark:border-violet-800/50 shadow-sm"
-                                    : "border-transparent text-muted-foreground hover:bg-violet-500/5 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300"
-                            )}
-                        >
-                            {file.title}
-                        </Link>
+            <aside className="hidden xl:block w-72 border-r border-border bg-muted/20 overflow-y-auto shrink-0 backdrop-blur-sm p-4">
+                <nav className="pt-3 space-y-8">
+                    {config.navigation.map((group, idx) => (
+                        <div key={idx} className="space-y-1">
+                            <h2 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                {group.title}
+                            </h2>
+                            {group.items.map(renderSidebarLink)}
+                        </div>
                     ))}
                 </nav>
             </aside>
 
-            {/* Content Area + Right Sidebar Container */}
+            {/* Content Area */}
             <div className="flex-1 overflow-y-auto relative scroll-smooth">
                 <div className="flex min-h-full">
-                    {/* Main Content */}
                     <div className="flex-1 min-w-0">
                         <div className="max-w-4xl mx-auto w-full px-4 md:px-8 py-10">
                             {loading ? (
@@ -256,70 +245,36 @@ export function SystemPageClient() {
                             ) : (
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <MarkdownRenderer content={content} />
-
                                     <div className="mt-16 grid gap-6 md:grid-cols-2 pt-10 border-t border-border/60">
-                                        {prevFile ? (
-                                            <Link
-                                                href={`/system/${prevFile.slug}`}
-                                                className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-start text-left"
-                                            >
+                                        {prevItem ? (
+                                            <Link href={prevItem.href === "/" ? "/system" : `/system${prevItem.href}`} className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-start text-left">
                                                 <div className="flex items-center text-xs font-semibold text-violet-600/70 dark:text-violet-400/70 mb-2 uppercase tracking-wider">
-                                                    <ArrowLeft className="w-3.5 h-3.5 mr-1.5 transition-transform group-hover:-translate-x-1" />
-                                                    Previous
+                                                    <ArrowLeft className="w-3.5 h-3.5 mr-1.5 transition-transform group-hover:-translate-x-1" /> Previous
                                                 </div>
-                                                <div className="font-semibold text-foreground group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
-                                                    {prevFile.title}
-                                                </div>
+                                                <div className="font-semibold text-foreground group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{prevItem.title}</div>
                                             </Link>
                                         ) : <div className="hidden md:block" />}
-
-                                        {nextFile && (
-                                            <Link
-                                                href={`/system/${nextFile.slug}`}
-                                                className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-end text-right"
-                                            >
+                                        {nextItem && (
+                                            <Link href={nextItem.href === "/" ? "/system" : `/system${nextItem.href}`} className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-end text-right">
                                                 <div className="flex items-center text-xs font-semibold text-violet-600/70 dark:text-violet-400/70 mb-2 uppercase tracking-wider">
-                                                    Next
-                                                    <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
+                                                    Next <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
                                                 </div>
-                                                <div className="font-semibold text-foreground group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
-                                                    {nextFile.title}
-                                                </div>
+                                                <div className="font-semibold text-foreground group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{nextItem.title}</div>
                                             </Link>
                                         )}
                                     </div>
                                 </div>
                             )}
-                            <div className="h-20" /> {/* Spacer */}
+                            <div className="h-20" />
                         </div>
                     </div>
-
-                    {/* Right Sidebar - TOC (Desktop) */}
-                    <aside className="w-72 bg-background/50 hidden xl:block flex-shrink-0 p-4 backdrop-blur-sm">
+                    {/* TOC Sidebar */}
+                    <aside className="w-72 bg-background/50 hidden xl:block shrink-0 p-4 backdrop-blur-sm">
                         <div className="sticky top-4 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2 pt-3">
-                            <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                                On this page
-                            </h3>
+                            <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">On this page</h3>
                             <nav className="space-y-2 border-l border-border pl-4">
                                 {toc.map((item) => (
-                                    <a
-                                        key={item.id}
-                                        href={`#${item.id}`}
-                                        className={clsx(
-                                            "block text-sm py-0.5 transition-all duration-200 border-l -ml-[17px] pl-4",
-                                            activeId === item.id
-                                                ? "border-violet-500 font-medium text-violet-600 dark:text-violet-400"
-                                                : item.level === 1
-                                                    ? "border-transparent text-foreground hover:text-primary hover:border-border"
-                                                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                                        )}
-                                        style={{ paddingLeft: item.level > 1 ? `${(item.level - 1) * 1}rem` : undefined }}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
-                                            setActiveId(item.id);
-                                        }}
-                                    >
+                                    <a key={item.id} href={`#${item.id}`} className={clsx("block text-sm py-0.5 transition-all duration-200 border-l -ml-[17px] pl-4", activeId === item.id ? "border-violet-500 font-medium text-violet-600 dark:text-violet-400" : item.level === 1 ? "border-transparent text-foreground hover:text-primary hover:border-border" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border")} style={{ paddingLeft: item.level > 1 ? `${(item.level - 1) * 1}rem` : undefined }} onClick={(e) => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); setActiveId(item.id); }}>
                                         {item.text}
                                     </a>
                                 ))}

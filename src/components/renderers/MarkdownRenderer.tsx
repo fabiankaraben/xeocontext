@@ -18,6 +18,9 @@ interface MarkdownRendererProps {
 }
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+    // Strip YAML frontmatter
+    const cleanContent = content.replace(/^---\n[\s\S]*?\n---\n/, "");
+
     return (
         <div className="prose prose-zinc dark:prose-invert max-w-none 
             prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground
@@ -29,7 +32,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             prose-code:before:content-none prose-code:after:content-none
             prose-img:rounded-xl prose-img:shadow-md prose-img:border prose-img:border-border
             prose-blockquote:border-l-primary prose-blockquote:bg-muted/20 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg prose-blockquote:text-muted-foreground prose-blockquote:not-italic
-            [&_pre:has(.mermaid)]:!bg-transparent [&_pre:has(.mermaid)]:!border-none [&_pre:has(.mermaid)]:!shadow-none [&_pre:has(.mermaid)]:!p-0
+            [&_pre:has(.mermaid)]:bg-transparent! [&_pre:has(.mermaid)]:border-none! [&_pre:has(.mermaid)]:shadow-none! [&_pre:has(.mermaid)]:p-0!
             ">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -55,7 +58,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
                                 <code
                                     className={clsx(
                                         className,
-                                        "block bg-[#0d1117] border border-border rounded-xl shadow-sm p-4 overflow-x-auto font-mono text-sm !text-gray-100"
+                                        "block bg-[#0d1117] border border-border rounded-xl shadow-sm p-4 overflow-x-auto font-mono text-sm text-gray-100!"
                                     )}
                                     {...props}
                                 >
@@ -78,7 +81,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
                     },
                 }}
             >
-                {content}
+                {cleanContent}
             </ReactMarkdown>
         </div>
     );

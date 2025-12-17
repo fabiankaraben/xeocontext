@@ -8,14 +8,26 @@ export async function generateStaticParams() {
         const configStr = fs.readFileSync(configPath, 'utf8');
         const config = JSON.parse(configStr);
 
-        const paths = config.files.systemDesign.map((file: any) => ({
-            slug: [file.slug]
-        }));
+        const paths: { slug: string[] }[] = [];
 
-        return [
-            { slug: [] }, // Root /system
-            ...paths
-        ];
+        if (config.navigation && Array.isArray(config.navigation)) {
+            config.navigation.forEach((group: any) => {
+                if (group.items && Array.isArray(group.items)) {
+                    group.items.forEach((item: any) => {
+                        const href = item.href;
+                        if (href === '/') {
+                            paths.push({ slug: [] });
+                        } else {
+                            // Remove leading slash and split
+                            const slug = href.startsWith('/') ? href.slice(1).split('/') : href.split('/');
+                            paths.push({ slug });
+                        }
+                    });
+                }
+            });
+        }
+
+        return paths.length > 0 ? paths : [{ slug: [] }];
     } catch (e) {
         console.error("Error generating static params", e);
         return [{ slug: [] }];
