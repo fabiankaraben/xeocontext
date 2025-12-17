@@ -16,14 +16,17 @@ The content is located at the **repository root**. It follows a strict separatio
 .
 ├── docker-compose.yml            # Orchestration to run the viewer locally.
 ├── xeocontext.config.json        # [MANDATORY] The central navigation and metadata map.
-├── global/                       # [MANDATORY] Cross-cutting architectural decisions.
+├── global/                       # [MANDATORY] Cross-cutting architectural decisions & Master Roots.
+│   ├── gateway/                  # 👈 UNIFIED SYSTEM API (Master Roots).
+│   │   ├── openapi.yaml          # The "Master" REST API definition (imports from all domains).
+│   │   └── asyncapi.yaml         # The "Master" Event definition (imports from all domains).
 │   ├── adrs/                     # Architecture Decision Records.
 │   └── standards/                # Coding conventions, API guidelines, etc.
 └── domains/                      # [MANDATORY] Business Logic Modules.
     ├── {domain-name}/            # (e.g., identity, payments, inventory)
     │   ├── readme.md             # [MANDATORY] Domain overview and design.
-    │   ├── openapi.yaml          # [OPTIONAL] REST API Root Definition.
-    │   └── asyncapi.yaml         # [OPTIONAL] Event-Driven Architecture Root Definition.
+    │   ├── openapi.yaml          # [OPTIONAL] Domain-specific REST API Root.
+    │   └── asyncapi.yaml         # [OPTIONAL] Domain-specific Event Root.
 
 ```
 
@@ -31,9 +34,9 @@ The content is located at the **repository root**. It follows a strict separatio
 
 This directory defines the laws of the system. **Always read this first** before generating implementation code.
 
+* **Gateway (`/global/gateway`):** Contains the **Master Root** files. These files do not define schemas directly; they aggregate endpoints and channels from all domains to provide a unified "System View" (ideal for Frontend/Mobile clients).
 * **ADRs (`/global/adrs`):** Explain *why* technical decisions were made.
 * **Standards (`/global/standards`):** Define naming conventions, error handling patterns, and security protocols that apply to ALL domains.
-* **Infrastructure:** Defines shared resources (Kubernetes, Databases, Cloud Providers).
 
 ## 3. Domain Modules (Bounded Contexts)
 
@@ -63,20 +66,20 @@ specs:
 
 ```
 
-### B. OpenAPI & AsyncAPI (Fragmented Structure)
+### B. OpenAPI & AsyncAPI (Fragmented & Aggregated Architecture)
 
-If an API or Event interface exists, it must be defined using a **Fragmented Architecture**.
+You must use a **Fragmented Architecture** that supports two views: **Domain View** (Microservice) and **System View** (Gateway).
 
-1. **Root Files:** The `openapi.yaml` or `asyncapi.yaml` located at the domain root (`/domains/{name}/openapi.yaml`) act **ONLY as entry points**. They provide the skeleton (info, servers, tags) and link to components.
-2. **Usage of `$ref`:** You MUST use `$ref` to link to the actual definitions located in a `components` subdirectory.
-3. **Relative Paths:** Always use relative paths for references (e.g., `$ref: './components/schemas/User.yaml'`).
+1. **Source of Truth (Components):** The actual definitions (Schemas, Paths, Messages) reside in `/domains/{name}/components/`.
+2. **Domain Root:** The file `/domains/{name}/openapi.yaml` aggregates only the components of that specific domain.
+3. **Master Root:** The file `/global/gateway/openapi.yaml` aggregates components from **ALL** domains using relative paths (e.g., `$ref: '../../domains/identity/components/paths/login.yaml'`).
 
 **Required Folder Structure for Specs:**
 
 ```text
 /domains/{domain-name}/
-├── openapi.yaml            # [ROOT] Imports paths from ./components/paths
-├── asyncapi.yaml           # [ROOT] Imports messages from ./components/messages
+├── openapi.yaml            # [DOMAIN ROOT] Imports local ./components
+├── asyncapi.yaml           # [DOMAIN ROOT] Imports local ./components
 └── components/
     ├── schemas/            # Data models (Shared between REST and Events)
     ├── messages/           # AsyncAPI message definitions
@@ -86,7 +89,11 @@ If an API or Event interface exists, it must be defined using a **Fragmented Arc
 
 ## 5. Instructions for LLM / Code Generation
 
-1. **Context Loading:** When asked to implement a feature for a specific domain, load the context from `domains/{target-domain}` AND `global`.
-2. **Implementation Consistency:** Ensure generated code follows the patterns defined in `global/standards`.
-3. **Spec-First:** Use the Root YAML files to traverse the `$ref` tree. Treat the resolved full specification as the **source of truth** for generating types, interfaces, and controllers.
-4. **Schema Reuse:** If the design links OpenAPI and AsyncAPI to the same schema file in `./components/schemas`, generate a single shared data model in the codebase to maintain consistency.
+1. **Context Selection:**
+* **Frontend/Client Implementation:** Read `/global/gateway/openapi.yaml` to understand the unified public API.
+* **Backend/Microservice Implementation:** Read `/domains/{target-domain}/openapi.yaml` to focus on the specific service contract.
+
+
+2. **Standards:** Ensure generated code follows the patterns defined in `global/standards`.
+3. **Spec Traversal:** Always resolve `$ref` links to understand the full structure.
+4. **Schema Reuse:** Detect when the "Master Root" and "Domain Root" point to the same component files. Use this to generate shared types/interfaces to avoid code duplication.
