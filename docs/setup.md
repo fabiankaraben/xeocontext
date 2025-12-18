@@ -71,7 +71,18 @@ If you want to modify the customized UI or build the image yourself:
     ```
     *Note: In dev mode, content is served from `content`. You may need to update files there to see changes.*
 
-4.  Build the Docker image:
-    ```bash
     docker build -t xeocontext:local .
+    ```
+
+## Content Validation
+
+Before pushing changes, it is highly recommended to lint your specifications:
+
+1.  **OpenAPI**:
+    ```bash
+    pnpm dlx @redocly/cli lint content/global/gateway/openapi.yaml
+    ```
+2.  **AsyncAPI**:
+    ```bash
+    pnpm dlx @asyncapi/cli validate content/global/gateway/asyncapi.yaml
     ```

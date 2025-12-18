@@ -61,3 +61,26 @@ Your OpenAPI 3.0+ file (YAML or JSON) is rendered using Swagger UI. This provide
 
 ### AsyncAPI
 Your AsyncAPI 2.0+ file is rendered using a unified AsyncAPI component, perfect for visualizing message-driven architectures (Channels, Subscribe/Publish operations).
+
+## Content Validation
+
+It is recommended to validate your spec files before committing changes to ensure the viewer renders them correctly.
+
+### OpenAPI Validation
+You can use [Redocly CLI](https://redocly.com/docs/cli/) to lint and bundle your OpenAPI definitions.
+
+```bash
+# Lint the main gateway file (and all its references)
+pnpm dlx @redocly/cli lint content/global/gateway/openapi.yaml
+
+# Lint a specific domain file
+pnpm dlx @redocly/cli lint content/domains/identity/components/paths/auth_login.yaml
+```
+
+### AsyncAPI Validation
+You can use [AsyncAPI CLI](https://www.asyncapi.com/docs/tools/cli) to validate your AsyncAPI definitions.
+
+```bash
+# Validate the main gateway file
+pnpm dlx @asyncapi/cli validate content/global/gateway/asyncapi.yaml
+```
