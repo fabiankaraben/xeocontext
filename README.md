@@ -97,6 +97,29 @@ The application reads from the `content` directory (which becomes `/content` in 
 }
 ```
 
+### Content Validation
+
+It is recommended to validate your spec files before committing changes to ensure the viewer renders them correctly.
+
+#### OpenAPI Validation
+You can use [Redocly CLI](https://redocly.com/docs/cli/) to lint and bundle your OpenAPI definitions.
+
+```bash
+# Lint the main gateway file (and all its references)
+pnpm --package=@redocly/cli dlx redocly lint content/global/gateway/openapi.yaml
+
+# Lint a specific domain file
+pnpm --package=@redocly/cli dlx redocly lint content/domains/identity/components/paths/auth_login.yaml
+```
+
+#### AsyncAPI Validation
+You can use [AsyncAPI CLI](https://www.asyncapi.com/docs/tools/cli) to validate your AsyncAPI definitions.
+
+```bash
+# Validate the main gateway file
+pnpm dlx @asyncapi/cli validate content/global/gateway/asyncapi.yaml
+```
+
 ### Docker Deployment
 
 To update the content without rebuilding the image, mount the content directories and configuration file as volumes.
