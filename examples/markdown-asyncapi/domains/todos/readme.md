@@ -1,7 +1,6 @@
 ---
 domain: todos
-specs:
-  rest: ./openapi.yaml
+
 ---
 
 # Todos Domain

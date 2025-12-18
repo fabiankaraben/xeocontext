@@ -1,7 +1,7 @@
 ---
 domain: library
 specs:
-  rest: ./openapi.yaml
+
   events: ./asyncapi.yaml
 ---
 

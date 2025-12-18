@@ -1,7 +1,6 @@
 ---
 domain: identity
-specs:
-  rest: ./openapi.yaml
+
 ---
 
 # Identity Domain

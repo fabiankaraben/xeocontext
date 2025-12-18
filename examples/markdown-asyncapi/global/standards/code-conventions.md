@@ -17,4 +17,4 @@ While individual languages (TS, Go, Rust) have their own linters, these rules ap
 
 ## 4. Documentation
 -   **ADRs**: Whenever a significant architectural decision is made, create a new Record in `global/adrs`.
--   **OpenAPI**: Do not implement an API endpoint that is not first defined in the `domains/{domain}/openapi.yaml`. API First!
+

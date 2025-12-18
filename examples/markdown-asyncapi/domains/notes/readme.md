@@ -1,7 +1,6 @@
 ---
 domain: notes
-specs:
-  rest: ./openapi.yaml
+
 ---
 
 # Notes Domain

@@ -22,7 +22,7 @@ This system follows a **Domain-Driven Design (DDD)** approach, split into the fo
 
 This repository contains the authoritative API definitions:
 
--   **Rest API (OpenAPI)**: Aggregated at [Global Gateway](/global/gateway/openapi.yaml).
+
 -   **Event API (AsyncAPI)**: Aggregated at [Global Gateway](/global/gateway/asyncapi.yaml).
 
 ## Synchronization Strategy

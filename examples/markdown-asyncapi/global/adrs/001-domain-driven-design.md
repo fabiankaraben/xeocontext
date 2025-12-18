@@ -7,4 +7,4 @@
 - **Consequences**:
     -   **Positive**: Clear separation of concerns. Each domain (`identity`, `todos`, `library`) evolves independently. Easier for teams to own specific domains.
     -   **Negative**: Initial overhead in setting up separate folders and potentially separate microservices.
-    -   **Implementation**: The `domains/` folder will be the root for Bounded Contexts. All specs (OpenAPI/AsyncAPI) must be co-located within their domain.
+    -   **Implementation**: The `domains/` folder will be the root for Bounded Contexts. All specs (AsyncAPI) must be co-located within their domain.
