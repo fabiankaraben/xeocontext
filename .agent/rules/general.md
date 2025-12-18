@@ -10,7 +10,6 @@ trigger: always_on
 
 Code:
 - Always write the code, comments and documentation in English, even when the prompt is not in English.
-- This is a `output: 'export'` (Static Export) application; there is no Next.js server, therefore NEVER use Next.js server options.
 
 Docs:
 - Whenever you make structural or relevant changes, update the user documentation in the /docs directory.
