@@ -44,7 +44,7 @@ export function Header({ title }: HeaderProps) {
     }, [isMobileMenuOpen]);
 
     const isActive = (path: string) => {
-        if (pathname === "/" && path === "/system") return true;
+        if (pathname === "/" && path === "/system-design") return true;
         return pathname?.startsWith(path);
     };
 
@@ -61,8 +61,8 @@ export function Header({ title }: HeaderProps) {
                     <nav className="hidden md:flex items-center space-x-1 bg-muted/50 p-1 rounded-full border border-border/50">
                         <TabLink
                             label="System Design"
-                            href="/system"
-                            isActive={isActive("/system")}
+                            href="/system-design"
+                            isActive={isActive("/system-design")}
                         />
                         {config?.openapi && (
                             <TabLink
@@ -137,7 +137,7 @@ export function Header({ title }: HeaderProps) {
             {isMobileMenuOpen && (
                 <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-xl p-4 space-y-4 animate-in slide-in-from-top-2">
                     <nav className="flex flex-col space-y-2">
-                        <MobileLink href="/system" isActive={isActive("/system")}>System Design</MobileLink>
+                        <MobileLink href="/system-design" isActive={isActive("/system-design")}>System Design</MobileLink>
                         {config?.openapi && (
                             <MobileLink href="/openapi" isActive={isActive("/openapi")}>OpenAPI</MobileLink>
                         )}

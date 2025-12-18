@@ -149,7 +149,7 @@ export function SystemPageClient() {
         // Actually, our route is /system/[[...slug]].
         // If href is /global/infrastructure, we want /system/global/infrastructure.
 
-        const linkHref = item.href === "/" ? "/system" : `/system${item.href}`;
+        const linkHref = item.href === "/" ? "/system-design" : `/system-design${item.href}`;
         const isActive = item.href === slugPath; // exact match
 
         return (
@@ -247,7 +247,7 @@ export function SystemPageClient() {
                                     <MarkdownRenderer content={content} />
                                     <div className="mt-16 grid gap-6 md:grid-cols-2 pt-10 border-t border-border/60">
                                         {prevItem ? (
-                                            <Link href={prevItem.href === "/" ? "/system" : `/system${prevItem.href}`} className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-start text-left">
+                                            <Link href={prevItem.href === "/" ? "/system-design" : `/system-design${prevItem.href}`} className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-start text-left">
                                                 <div className="flex items-center text-xs font-semibold text-violet-600/70 dark:text-violet-400/70 mb-2 uppercase tracking-wider">
                                                     <ArrowLeft className="w-3.5 h-3.5 mr-1.5 transition-transform group-hover:-translate-x-1" /> Previous
                                                 </div>
@@ -255,7 +255,7 @@ export function SystemPageClient() {
                                             </Link>
                                         ) : <div className="hidden md:block" />}
                                         {nextItem && (
-                                            <Link href={nextItem.href === "/" ? "/system" : `/system${nextItem.href}`} className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-end text-right">
+                                            <Link href={nextItem.href === "/" ? "/system-design" : `/system-design${nextItem.href}`} className="group relative p-6 rounded-2xl border border-violet-200/50 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 hover:border-violet-300 dark:hover:border-violet-700 transition-all duration-300 flex flex-col items-end text-right">
                                                 <div className="flex items-center text-xs font-semibold text-violet-600/70 dark:text-violet-400/70 mb-2 uppercase tracking-wider">
                                                     Next <ArrowRight className="w-3.5 h-3.5 ml-1.5 transition-transform group-hover:translate-x-1" />
                                                 </div>

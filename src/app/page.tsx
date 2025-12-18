@@ -7,7 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/system");
+    router.replace("/system-design");
   }, [router]);
 
   return (
