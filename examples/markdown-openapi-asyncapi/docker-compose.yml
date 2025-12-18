@@ -1,0 +1,14 @@
+services:
+  xeocontext:
+    build:
+      context: ../..
+      # Prod option, best performance
+      dockerfile: Dockerfile
+      # Dev option, with live-reload
+      # dockerfile: Dockerfile.dev
+    container_name: xeocontext_example_app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app/content
+    restart: unless-stopped
