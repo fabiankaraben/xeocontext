@@ -2,7 +2,6 @@
 domain: library
 specs:
   rest: ./openapi.yaml
-  events: ./asyncapi.yaml
 ---
 
 # Library Domain
@@ -20,7 +19,7 @@ The synchronization mechanism follows an "Optimistic UI" approach aka Local-Firs
     -   The server accepts the changes, resolves conflicts (Last-Write-Wins or Vector Clock), and updates the master state in DB.
     -   The server returns the *latest* state of all modified files.
 3.  **Real-Time**:
-    -   (Optional) Server pushes updates via Websockets (defined in AsyncAPI) to other active devices of the same user.
+    -   (Optional) Server pushes updates via Websockets to other active devices of the same user.
 
 ### Viewers State
 -   **PDF Viewer**: Syncs `lastReadPage` and `bookmarks` list.
