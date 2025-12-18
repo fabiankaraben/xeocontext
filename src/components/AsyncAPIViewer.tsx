@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
+import { useTheme } from "next-themes";
 
 declare global {
     namespace JSX {
@@ -17,6 +18,12 @@ interface AsyncAPIViewerProps {
 
 export function AsyncAPIViewer({ schema }: AsyncAPIViewerProps) {
     const componentRef = useRef<HTMLElement>(null);
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         if (componentRef.current && schema) {
@@ -27,8 +34,12 @@ export function AsyncAPIViewer({ schema }: AsyncAPIViewerProps) {
 
     if (!schema) return null;
 
+    // Use correct stylesheet based on theme
+    const isDark = mounted && resolvedTheme === "dark";
+    const cssPath = isDark ? "/assets/asyncapi-dark.css" : "/assets/asyncapi.min.css";
+
     return (
-        <div className="asyncapi-wrapper bg-white backdrop-blur-sm rounded-xl overflow-hidden shadow-sm border border-border/50 min-h-[500px] relative">
+        <div className="asyncapi-wrapper bg-white dark:bg-gray-800 backdrop-blur-sm rounded-xl overflow-hidden shadow-sm border border-border/50 dark:border-border/10 min-h-[500px] relative transition-colors duration-300">
             <Script
                 src="https://unpkg.com/@asyncapi/web-component@next/lib/asyncapi-web-component.js"
                 strategy="lazyOnload"
@@ -46,7 +57,7 @@ export function AsyncAPIViewer({ schema }: AsyncAPIViewerProps) {
             {/* @ts-ignore - Web Component */}
             <asyncapi-component
                 ref={componentRef}
-                cssImportPath="/assets/asyncapi.min.css"
+                cssImportPath={cssPath}
                 config='{"showErrors": true, "sidebar": {"show": true}}'>
                 {/* @ts-ignore - Web Component */}
             </asyncapi-component>
