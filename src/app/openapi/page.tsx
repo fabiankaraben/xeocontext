@@ -44,9 +44,9 @@ export default async function OpenAPIPage() {
     }
 
     return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-            <div className="flex-none pt-8 px-4 max-w-7xl mx-auto w-full">
-                <div className="flex flex-col space-y-2 mb-6">
+        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+            <div className="pt-8 px-4 max-w-7xl mx-auto w-full pb-20">
+                <div className="flex flex-col space-y-2 mb-8">
                     <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">
                         OpenAPI Specification
                     </h1>
@@ -54,10 +54,8 @@ export default async function OpenAPIPage() {
                         Explore and test the RESTful API endpoints defined in the system architecture.
                     </p>
                 </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto pb-20 px-4">
-                <div className="max-w-7xl mx-auto w-full">
+                <div className="w-full">
                     <OpenAPIViewer spec={bundledSpec as Record<string, any>} />
                 </div>
             </div>
